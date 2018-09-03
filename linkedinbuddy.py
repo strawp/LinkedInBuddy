@@ -16,6 +16,7 @@ from javax.swing import SwingUtilities;
 from javax.swing.table import AbstractTableModel;
 from org.apache.commons.lang3 import StringEscapeUtils
 from threading import Lock
+from functions import *
 import re, json
 
 class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableModel, IScannerCheck):
@@ -91,30 +92,31 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         
         # Check if linkedin
         srv = baseRequestResponse.getHttpService()
+        # print srv
         if 'linkedin.com' not in srv.getHost():
+          print srv.getHost() + ' is not linkedin'
           return
 
         url = self._helpers.analyzeRequest(baseRequestResponse).getUrl()
         m = re.search( r'^https:\/\/www\.linkedin\.com(:443)?\/(voyager|in)\/', url.toString() ) 
-        if not m: return
+        if not m: 
+          print url.toString() + ' is not a relevant page'
+          return
 
+        # print url
 
         respinfo = self._helpers.analyzeResponse(baseRequestResponse.getResponse())
         mimetype = respinfo.getStatedMimeType()
         if mimetype == 'HTML':
 
           # Get all <code> blocks
+          print 'Finding code blocks in ' + url
           resp = str(bytearray(baseRequestResponse.getResponse()))
-          m = re.findall(r'<code[^>]*>([^<]+)<\/code>', resp )
-          for code in m:
-            code = StringEscapeUtils.unescapeHtml4(code)
-            try:
-              data = json.loads(code)
-            except:
-              continue
-            self.parseData( data )
+          
+          self.searchResponseForProfileInfo( resp, url )
         
         elif mimetype == 'JSON':
+          print url + ' is raw JSON'
           resp = str(bytearray(baseRequestResponse.getResponse())[respinfo.getBodyOffset():])
           data = json.loads(resp)
           self.parseData(data)
@@ -138,7 +140,20 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         # self._log.add(LogEntry(bytearray('Bob'),bytearray('Bobblington'),bytearray('Chief Bobber'),bytearray( 'Bobsco'),bytearray('Bobbville'),bytearray('Aaaaa'),bytearray('bbbbb')))
         # self.fireTableRowsInserted(row, row)
         # self._lock.release()
-    
+   
+
+    def searchResponseForProfileInfo( rep, url ):
+      m = re.findall(r'<code[^>]*>([^<]+)<\/code>', resp )
+      for code in m:
+        code = StringEscapeUtils.unescapeHtml4(code)
+        # print code
+        try:
+          data = json.loads(code)
+        except:
+          print 'Failed to parse json from ' + url
+          continue
+        # print data
+        self.parseData( data )
     
     # Parse a blob of data found on a page
     def parseData( self, data ):
@@ -148,7 +163,11 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
           if 'occupation' in row.keys(): title = self.sanitise(row['occupation'])
           elif 'headline' in row.keys(): title = self.sanitise(row['headline'])
           else: title = ''
-          print self.sanitise(row['firstName'])+'\t'+self.sanitise(row['lastName'])+'\t'+title
+          if 'locationName' in row.keys():
+            location = row['locationName']
+          else:
+            location = ''
+          print self.sanitise(row['firstName'])+'\t'+self.sanitise(row['lastName'])+'\t'+title+'\t'+location
 
     def sanitise( self, txt ):
       rtn = ''
@@ -227,4 +246,5 @@ class LogEntry:
         self._locationName = locationname
         self._publicIdentifier = publicidentifier
         self._profilepic = profilepic
+
 
