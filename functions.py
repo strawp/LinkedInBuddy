@@ -5,8 +5,8 @@ def parseData( data, emailstyle=None ):
   rtn = []
   for row in data['included']:
     if 'firstName' in row.keys() and 'lastName' in row.keys():
-      if 'occupation' in row.keys(): title = sanitise(row['occupation'])
-      elif 'headline' in row.keys(): title = sanitise(row['headline'])
+      if 'occupation' in row.keys() and row['occupation'] is not None: title = sanitise(row['occupation'])
+      elif 'headline' in row.keys() and row['headline'] is not None: title = sanitise(row['headline'])
       else: title = ''
       if 'locationName' in row.keys():
         location = row['locationName']
@@ -32,6 +32,7 @@ def parseData( data, emailstyle=None ):
   return rtn
     
 def sanitise( txt ):
+  if txt is None: return txt
   rtn = ''
   for c in txt:
     if ord(c) not in range(128): continue
