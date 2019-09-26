@@ -5,6 +5,7 @@ def parseData( data, emailstyle=None ):
   rtn = []
   for row in data['included']:
     if 'firstName' in row.keys() and 'lastName' in row.keys():
+      if row['firstName'] is None or row['lastName'] is None: continue
       if 'occupation' in row.keys() and row['occupation'] is not None: title = sanitise(row['occupation'])
       elif 'headline' in row.keys() and row['headline'] is not None: title = sanitise(row['headline'])
       else: title = ''
