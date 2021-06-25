@@ -94,13 +94,13 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         srv = baseRequestResponse.getHttpService()
         # print srv
         if 'linkedin.com' not in srv.getHost():
-          print srv.getHost() + ' is not linkedin'
+          print(srv.getHost() + ' is not linkedin')
           return
 
         url = self._helpers.analyzeRequest(baseRequestResponse).getUrl()
         m = re.search( r'^https:\/\/www\.linkedin\.com(:443)?\/(voyager|in)\/', url.toString() ) 
         if not m: 
-          print url.toString() + ' is not a relevant page'
+          print(url.toString() + ' is not a relevant page')
           return
 
         # print url
@@ -110,13 +110,13 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         if mimetype == 'HTML':
 
           # Get all <code> blocks
-          print 'Finding code blocks in ' + url
+          print('Finding code blocks in ' + url)
           resp = str(bytearray(baseRequestResponse.getResponse()))
           
           self.searchResponseForProfileInfo( resp, url )
         
         elif mimetype == 'JSON':
-          print url + ' is raw JSON'
+          print(url + ' is raw JSON')
           resp = str(bytearray(baseRequestResponse.getResponse())[respinfo.getBodyOffset():])
           data = json.loads(resp)
           self.parseData(data)
@@ -150,29 +150,29 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         try:
           data = json.loads(code)
         except:
-          print 'Failed to parse json from ' + url
+          print('Failed to parse json from ' + url)
           continue
         # print data
         self.parseData( data )
     
     # Parse a blob of data found on a page
     def parseData( self, data ):
-      if 'included' not in data.keys(): return
+      if 'included' not in list(data.keys()): return
       for row in data['included']:
-        if 'firstName' in row.keys() and 'lastName' in row.keys():
-          if 'occupation' in row.keys(): title = self.sanitise(row['occupation'])
-          elif 'headline' in row.keys(): title = self.sanitise(row['headline'])
+        if 'firstName' in list(row.keys()) and 'lastName' in list(row.keys()):
+          if 'occupation' in list(row.keys()): title = self.sanitise(row['occupation'])
+          elif 'headline' in list(row.keys()): title = self.sanitise(row['headline'])
           else: title = ''
-          if 'locationName' in row.keys():
+          if 'locationName' in list(row.keys()):
             location = row['locationName']
           else:
             location = ''
-          print self.sanitise(row['firstName'])+'\t'+self.sanitise(row['lastName'])+'\t'+title+'\t'+location
+          print(self.sanitise(row['firstName'])+'\t'+self.sanitise(row['lastName'])+'\t'+title+'\t'+location)
 
     def sanitise( self, txt ):
       rtn = ''
       for c in txt:
-        if ord(c) not in range(128): continue
+        if ord(c) not in list(range(128)): continue
         rtn += c
       return rtn
 

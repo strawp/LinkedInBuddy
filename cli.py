@@ -16,7 +16,7 @@ def main():
     sys.exit(2)
     
   if not os.path.isfile( args.infile ):
-    print args.infile + ' doesn\'t exist'
+    print(args.infile + ' doesn\'t exist')
     sys.exit(2)
 
   from lxml import etree
@@ -26,26 +26,28 @@ def main():
   for item in items:
     url = item.find('url').text
     r = item.find('response')
-    if 'base64' in r.attrib.keys() and r.attrib['base64'] == 'true':
+    if 'base64' in list(r.attrib.keys()) and r.attrib['base64'] == 'true':
       try:
         response = base64.b64decode( r.text )
       except:
-        print 'Error converting response from base64'
+        print('Error converting response from base64')
         continue
     else:
       response = r.text
     if not response: continue
     response = str(response)
     headers = response.replace('\r','').split("\n\n")[0]
-    response = response.replace('\r','').split("\n\n")[1]
+    # response = response.replace('\r','').split("\n\n")[1]
     if re.search('Content-Type: text\/html', response ):
-      searchResponseForProfileInfo( response, url, args.emailstyle )
+      rlt = searchResponseForProfileInfo( response, url, args.emailstyle )
+      if len( rlt ) > 0: people = people + rlt
     else:
       try:
         data = json.loads(response)
       except:
         continue
-      people += parseData( data, args.emailstyle )
+      rlt = parseData( data, args.emailstyle )
+      if len( rlt ) > 0: people = people + rlt
   uniq = {}
   for p in people:
     if p['firstname'] == '' or p['lastname'] == '': continue
@@ -55,10 +57,10 @@ def main():
 
   for k in sorted(uniq.keys()):
     p = uniq[k]
-    print p['firstname'] + ' ' + p['lastname'] + ': ' + p['title'],
-    if 'email' in p.keys():
-      print ' : ' + p['email'],
-    print '\n',
+    print(p['firstname'] + ' ' + p['lastname'] + ': ' + p['title'], end=' ')
+    if 'email' in list(p.keys()):
+      print(' : ' + p['email'], end=' ')
+    print('')
 
 
 
