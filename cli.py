@@ -6,7 +6,8 @@ def main():
   # 
   import argparse, os, base64, re, json
   parser = argparse.ArgumentParser(description="A CLI interface for running an engagement") # ,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument('-t',"--title", default='.*', help="Filter results by job titles which match this regex (e.g. \"at Microsoft\")")
+  parser.add_argument('-t',"--title", default='.*', help="Filter results by job titles which match this regex (e.g. \"HR|Human Resources\")")
+  parser.add_argument('-o',"--org", default='.*', help="Which organisation regex to filter for")
   parser.add_argument('-e',"--emailstyle", default=None, help="The email address style, e.g. <fi>.<ln>@microsoft.com")
   parser.add_argument("infile", help="Burp XML file containing saved items from LinkedIn")
   args = parser.parse_args()
@@ -28,7 +29,7 @@ def main():
     r = item.find('response')
     if 'base64' in list(r.attrib.keys()) and r.attrib['base64'] == 'true':
       try:
-        response = base64.b64decode( r.text )
+        response = base64.b64decode( r.text ).decode()
       except:
         print('Error converting response from base64')
         continue
@@ -38,7 +39,7 @@ def main():
     response = str(response)
     headers = response.replace('\r','').split("\n\n")[0]
     # response = response.replace('\r','').split("\n\n")[1]
-    if re.search('Content-Type: text\/html', response ):
+    if 'Content-Type: text/html' in headers:
       rlt = searchResponseForProfileInfo( response, url, args.emailstyle )
       if len( rlt ) > 0: people = people + rlt
     else:
@@ -52,6 +53,7 @@ def main():
   for p in people:
     if p['firstname'] == '' or p['lastname'] == '': continue
     if not re.search(args.title, p['title'], re.I): continue
+    if not re.search(args.org, p['employer'], re.I): continue
     key = p['firstname'].lower() + '_' + p['lastname'].lower() + '_' + p['title'].lower()
     uniq[key] = p
 
@@ -61,8 +63,6 @@ def main():
     if 'email' in list(p.keys()):
       print(' : ' + p['email'], end=' ')
     print('')
-
-
 
 if __name__ == "__main__":
   main()

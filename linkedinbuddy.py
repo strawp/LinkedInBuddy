@@ -142,19 +142,6 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, AbstractTableM
         # self._lock.release()
    
 
-    def searchResponseForProfileInfo( rep, url ):
-      m = re.findall(r'<code[^>]*>([^<]+)<\/code>', resp )
-      for code in m:
-        code = StringEscapeUtils.unescapeHtml4(code)
-        # print code
-        try:
-          data = json.loads(code)
-        except:
-          print('Failed to parse json from ' + url)
-          continue
-        # print data
-        self.parseData( data )
-    
     # Parse a blob of data found on a page
     def parseData( self, data ):
       if 'included' not in list(data.keys()): return
